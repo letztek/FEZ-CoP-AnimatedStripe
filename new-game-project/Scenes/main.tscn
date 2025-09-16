@@ -1,0 +1,12 @@
+[gd_scene load_steps=2 format=3 uid="uid://bfuiwvu4ebqom"]
+
+[ext_resource type="PackedScene" uid="uid://b8jqhteaskv63" path="res://Scenes/Player.tscn" id="1_ig7tw"]
+
+[node name="Main" type="Node2D"]
+
+[node name="Player" parent="." instance=ExtResource("1_ig7tw")]
+move_speed = 200.0
+shoot_cooldown = 0.3
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(292, -103)

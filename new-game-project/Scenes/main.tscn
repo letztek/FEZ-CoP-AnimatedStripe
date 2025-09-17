@@ -5,8 +5,7 @@
 [node name="Main" type="Node2D"]
 
 [node name="Player" parent="." instance=ExtResource("1_ig7tw")]
-move_speed = 200.0
-shoot_cooldown = 0.3
+animation_speed = 0.18
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2(292, -103)

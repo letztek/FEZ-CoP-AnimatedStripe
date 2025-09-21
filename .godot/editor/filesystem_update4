@@ -1,0 +1,9 @@
+res://Player.tscn
+res://Scenes/main.tscn
+res://Scripts/PlayerController.gd
+res://Scenes/Player/player.tscn
+res://Scripts/Player/PlayerController.gd
+res://Scenes/Bullets/magic_bullet.tscn
+res://Scenes/Bullets/magic_bullet.gd
+res://Scripts/Player/MagicBullet.gd
+res://Scenes/Bullets/MagicBullet.tscn

@@ -1,0 +1,21 @@
+[gd_scene load_steps=4 format=3 uid="uid://pnuisk5f2kay"]
+
+[ext_resource type="Script" uid="uid://cniy4bljktbcx" path="res://Scripts/Player/PlayerController.gd" id="1_htcer"]
+[ext_resource type="SpriteFrames" uid="uid://c4evqqsi1reki" path="res://Resources/Animations/player_animations.tres" id="2_a3d8c"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_a3d8c"]
+size = Vector2(187, 465)
+
+[node name="Player" type="CharacterBody2D"]
+position = Vector2(195, 309)
+script = ExtResource("1_htcer")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+sprite_frames = ExtResource("2_a3d8c")
+animation = &"basic_attack_frames"
+frame = 4
+frame_progress = 1.0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(-11.5, 74.5)
+shape = SubResource("RectangleShape2D_a3d8c")

@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://bprewcs2g8jss"]
+
+[ext_resource type="Script" uid="uid://b8gmmjhukisnh" path="res://Scripts/Player/MagicBullet.gd" id="1_f2knt"]
+
+[node name="MagicBullet" type="Area2D"]
+script = ExtResource("1_f2knt")

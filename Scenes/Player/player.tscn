@@ -13,9 +13,9 @@ script = ExtResource("1_htcer")
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 sprite_frames = ExtResource("2_a3d8c")
 animation = &"basic_attack_frames"
-frame = 4
+frame = 48
 frame_progress = 1.0
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-position = Vector2(-11.5, 74.5)
+position = Vector2(-13, 13)
 shape = SubResource("RectangleShape2D_a3d8c")

@@ -141,7 +141,7 @@ func set_shooter(shooter_node: Node):
 
 func _on_body_entered(body):
 	"""碰撞到物體時的處理"""
-	print("子彈撞到物體：", body.name)
+	print("子彈撞到 Body：", body.name, " 類型：", body.get_class())
 	
 	# 檢查是否是發射者本身
 	if body == shooter:
@@ -156,13 +156,17 @@ func _on_body_entered(body):
 	destroy_bullet()
 
 func _on_area_entered(area):
-	"""碰撞到其他區域時的處理"""
-	print("子彈撞到區域：", area.name)
+	print("子彈撞到 Area：", area.name, " 類型：", area.get_class())
 	
 	# 檢查是否是發射者本身
 	if area == shooter:
 		print("忽略發射者區域碰撞：", area.name)
 		return
+	
+	# 檢查是否有 take_damage 方法（是敵人）
+	if area.has_method("take_damage"):
+		area.take_damage(damage)
+		print("對 ", area.name, " 造成 ", damage, " 點傷害")
 	
 	destroy_bullet()
 

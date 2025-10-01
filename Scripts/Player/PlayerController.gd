@@ -16,7 +16,8 @@ enum AnimationState {
 	IDLE,
 	WALK_FORWARD,
 	WALK_BACKWARD,
-	ATTACKING
+	ATTACKING,
+	DASHING  # 新增：小跳狀態
 }
 
 # 狀態變數
@@ -24,6 +25,8 @@ var current_state: AnimationState = AnimationState.IDLE
 var is_attacking: bool = false
 var can_shoot: bool = true
 var shoot_timer: float = 0.0
+var is_dashing: bool = false  # 新增：小跳狀態追蹤
+var dash_direction: Vector2 = Vector2.ZERO  # 新增：小跳方向
 
 # 節點引用
 @onready var animated_sprite = $AnimatedSprite2D
@@ -38,13 +41,13 @@ func _ready():
 	
 	# 檢查動畫資源
 	if animated_sprite.sprite_frames:
-		print("✅ SpriteFrames 載入成功")
+		print("SpriteFrames 載入成功")
 		print("可用動畫: ", animated_sprite.sprite_frames.get_animation_names())
 		
 		# 開始播放 idle 動畫
 		play_animation("idle_frames")
 	else:
-		print("❌ 沒有 SpriteFrames 資源！")
+		print("沒有 SpriteFrames 資源")
 
 func _physics_process(delta):
 	# 處理射擊冷卻
@@ -56,32 +59,21 @@ func _physics_process(delta):
 		move_and_slide()
 		return
 	
+	# 小跳期間不能控制移動
+	if is_dashing:
+		velocity = dash_direction * move_speed * 3  # 小跳速度是移動速度的3倍
+		move_and_slide()
+		return
+	
 	# 獲取移動輸入
 	var movement = get_movement_input()
-	
-	# 調試移動輸入
-	if movement != Vector2.ZERO:
-		print("移動輸入: ", movement)
 	
 	# 根據輸入更新動畫
 	update_animation_state(movement)
 	
 	# 應用移動
-	var old_position = global_position
 	velocity = movement * move_speed
-	
-	# 詳細調試信息
-	if movement != Vector2.ZERO:
-		print("設置前 velocity: ", velocity)
-		print("移動前位置: ", old_position)
-	
 	move_and_slide()
-	
-	if movement != Vector2.ZERO:
-		print("移動後位置: ", global_position)
-		print("位置差: ", global_position - old_position)
-		print("實際 velocity: ", velocity)
-		print("---")
 
 func get_movement_input() -> Vector2:
 	"""獲取八方向移動輸入"""
@@ -96,10 +88,6 @@ func get_movement_input() -> Vector2:
 		input.y -= 1
 	if Input.is_action_pressed("move_down"):      # S
 		input.y += 1
-	
-	# 調試輸入檢測
-	if input != Vector2.ZERO:
-		print("實際移動輸入: ", input)
 	
 	return input.normalized()
 
@@ -137,7 +125,7 @@ func play_current_state_animation():
 func play_animation(animation_name: String):
 	"""安全地播放動畫"""
 	if not animated_sprite or not animated_sprite.sprite_frames:
-		print("❌ AnimatedSprite2D 或 SpriteFrames 不存在")
+		print("AnimatedSprite2D 或 SpriteFrames 不存在")
 		return
 	
 	if animated_sprite.sprite_frames.has_animation(animation_name):
@@ -145,14 +133,22 @@ func play_animation(animation_name: String):
 		animated_sprite.play()
 		print("播放動畫: ", animation_name)
 	else:
-		print("⚠️ 動畫不存在: ", animation_name)
+		print("動畫不存在: ", animation_name)
 		print("可用動畫: ", animated_sprite.sprite_frames.get_animation_names())
 
 func _input(event):
-	"""處理攻擊輸入"""
-	if event.is_action_pressed("attack") and can_shoot and not is_attacking:
-		print("攻擊按鍵被按下")
+	"""處理攻擊和小跳輸入"""
+	# 攻擊輸入
+	if event.is_action_pressed("attack") and can_shoot and not is_attacking and not is_dashing:
 		start_attack()
+	
+	# 向前小跳 (E 鍵)
+	if event.is_action_pressed("dash_forward") and not is_attacking and not is_dashing:
+		start_dash(Vector2.RIGHT)
+	
+	# 向後小跳 (Q 鍵)
+	if event.is_action_pressed("dash_backward") and not is_attacking and not is_dashing:
+		start_dash(Vector2.LEFT)
 
 func start_attack():
 	"""開始攻擊"""
@@ -160,21 +156,32 @@ func start_attack():
 	can_shoot = false
 	shoot_timer = 0.0
 	current_state = AnimationState.ATTACKING
-	play_animation("basic_attack_frames")
 	
-	# 發射子彈
+	# 連接動畫完成信號
+	if not animated_sprite.animation_finished.is_connected(_on_attack_animation_finished):
+		animated_sprite.animation_finished.connect(_on_attack_animation_finished)
+	
+	play_animation("basic_attack_frames")
+	print("開始攻擊動畫")
+
+func _on_attack_animation_finished():
+	"""攻擊動畫完成後的處理"""
+	print("攻擊動畫播放完成")
+	
+	# 動畫結束後發射魔法彈
 	fire_bullet()
 	
-	# 設置攻擊結束計時器
-	var attack_duration = 0.6
-	get_tree().create_timer(attack_duration).timeout.connect(end_attack)
+	# 斷開信號連接
+	if animated_sprite.animation_finished.is_connected(_on_attack_animation_finished):
+		animated_sprite.animation_finished.disconnect(_on_attack_animation_finished)
 	
-	print("⚔️ 開始攻擊")
+	# 結束攻擊
+	end_attack()
 
 func end_attack():
 	"""結束攻擊"""
 	is_attacking = false
-	print("✅ 攻擊結束")
+	print("攻擊結束")
 	
 	# 回到 idle 狀態
 	current_state = AnimationState.IDLE
@@ -191,7 +198,7 @@ func fire_bullet():
 		print("錯誤：無法載入子彈場景：", bullet_scene_path)
 		return
 	
-	print("✅ 子彈場景載入成功")
+	print("子彈場景載入成功")
 	
 	# 創建子彈實例
 	var bullet = bullet_scene.instantiate()
@@ -199,7 +206,7 @@ func fire_bullet():
 		print("錯誤：無法創建子彈實例")
 		return
 	
-	print("✅ 子彈實例創建成功")
+	print("子彈實例創建成功")
 	
 	# 計算發射位置
 	var spawn_position = get_bullet_spawn_position()
@@ -212,7 +219,7 @@ func fire_bullet():
 	bullet.set_direction(Vector2.RIGHT)
 	bullet.set_shooter(self)
 	
-	print("🚀 發射魔法彈於位置：", spawn_position)
+	print("發射魔法彈於位置：", spawn_position)
 
 func get_bullet_spawn_position() -> Vector2:
 	"""計算子彈發射位置"""
@@ -238,3 +245,31 @@ func handle_shooting_cooldown(delta: float):
 		shoot_timer += delta
 		if shoot_timer >= shoot_cooldown:
 			can_shoot = true
+
+func start_dash(direction: Vector2):
+	"""開始小跳"""
+	is_dashing = true
+	dash_direction = direction
+	current_state = AnimationState.DASHING
+	
+	# 根據方向播放對應動畫
+	if direction.x > 0:  # 向前
+		play_animation("walk_forward_frames")
+		print("向前小跳")
+	else:  # 向後
+		play_animation("walk_backward_frames")
+		print("向後小跳")
+	
+	# 設置小跳持續時間（約等於移動3步的時間）
+	var dash_duration = 0.3  # 0.3秒完成小跳
+	get_tree().create_timer(dash_duration).timeout.connect(end_dash)
+
+func end_dash():
+	"""結束小跳"""
+	is_dashing = false
+	dash_direction = Vector2.ZERO
+	print("小跳結束")
+	
+	# 回到 idle 狀態
+	current_state = AnimationState.IDLE
+	play_animation("idle_frames")
